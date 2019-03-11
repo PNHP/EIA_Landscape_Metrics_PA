@@ -116,3 +116,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+*.freelist
+
+# misc GIS
+*.gdb*
+*Index\*
+
