@@ -49,19 +49,24 @@ NatCov.save("Site_NatCover")
 # region group
 arcpy.AddMessage("Create Region Groups.")
 outRgnGrp = RegionGroup(NatCov, "FOUR")
-
 # extract to points and extract from region group
 tmp_points = "outSitePoints"
 tmp_points1 = "outSitePoints_extract"
 arcpy.FeatureToPoint_management(site, tmp_points, "INSIDE")
 ExtractValuesToPoints(tmp_points, outRgnGrp, tmp_points1, "NONE", "ALL")
+arcpy.AddMessage("Trying to get regiongroup id")
 
-with arcpy.da.SearchCursor(tmp_points1, ['RASTERVALU']) as cursor:
-    for row in cursor:
-        x = {0}
-        #print('{0}'.format(row[0]))
+cursor = arcpy.da.SearchCursor(tmp_points1, ['RASTERVALU'])
+for row in cursor:
+    print(row[0])
+    attRgnGrp = ExtractByAttributes(outRgnGrp, '"' + "Value" + '"  = "' + str(row[0]) + '"' )
 
-attRgnGrp = ExtractByAttributes(outRgnGrp, '"' + "Value" + '"  = "' + str(x) + '"' )
+#with arcpy.da.SearchCursor(tmp_points1, ['RASTERVALU']) as cursor:
+#    for row in cursor:
+#        x = {0}
+#        #print('{0}'.format(row[0]))
+
+#attRgnGrp = ExtractByAttributes(outRgnGrp, '"' + "Value" + '"  = "' + str(x) + '"' )
 
 
 

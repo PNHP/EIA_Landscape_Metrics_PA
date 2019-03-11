@@ -122,3 +122,10 @@ $RECYCLE.BIN/
 *.gdb*
 *Index\*
 
+*.txt
+Index/EIA_Level1_Tool/segments.gen
+*.cfs
+Index/Thumbnail/indx
+*.jpg
+*.aprx
+Index/EIA_Level1_Tool/segments_2
