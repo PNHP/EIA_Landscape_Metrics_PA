@@ -102,14 +102,14 @@ arcpy.AddMessage("----------------------------------------")
 
 
 ################################################################################
-## LAN2 -  #############################################
+## LAN2 - Land Use Index #######################################################
 
 
 
 
 # report it out
 arcpy.AddMessage("----------------------------------------")
-arcpy.AddMessage("LAN2 - A -------")
+arcpy.AddMessage("LAN2 - Land Use Index ------------------")
 #arcpy.AddMessage("Score: {0}".format(str(NatCovProp)))
 #arcpy.AddMessage("Rating: {0}".format(str(NatCovScore)))
 arcpy.AddMessage("----------------------------------------")
@@ -118,14 +118,14 @@ arcpy.AddMessage("----------------------------------------")
 
 
 ################################################################################
-## BUF1 -  #############################################
+## BUF1 - Perimeter with Natural Buffer ########################################
 
 
 
 
 # report it out
 arcpy.AddMessage("----------------------------------------")
-arcpy.AddMessage("BUF1 - A -------")
+arcpy.AddMessage("BUF1 -  Perimeter with Natural Buffer---")
 #arcpy.AddMessage("Score: {0}".format(str(NatCovProp)))
 #arcpy.AddMessage("Rating: {0}".format(str(NatCovScore)))
 arcpy.AddMessage("----------------------------------------")
@@ -137,14 +137,14 @@ arcpy.AddMessage("----------------------------------------")
 
 
 ################################################################################
-## BUF2 -  #############################################
+## BUF2 - Width of Natural Buffer ##############################################
 
 
 
 
 # report it out
 arcpy.AddMessage("----------------------------------------")
-arcpy.AddMessage("BUF2 - A -------")
+arcpy.AddMessage("BUF2 - Width of Natural Buffer ---------")
 #arcpy.AddMessage("Score: {0}".format(str(NatCovProp)))
 #arcpy.AddMessage("Rating: {0}".format(str(NatCovScore)))
 arcpy.AddMessage("----------------------------------------")
