@@ -21,8 +21,10 @@ tool_exec <- function(in_params, out_params)
 {
 
 # check and load required libraries  
- if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
-require(dplyr)
+if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
+  require(here)
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+  require(dplyr)
 if (!requireNamespace("arcgisbinding", quietly = TRUE)) install.packages("arcgisbinding")
   require(arcgisbinding)
 if (!requireNamespace("sf", quietly = TRUE)) install.packages("sf")
@@ -32,6 +34,7 @@ if (!requireNamespace("tidyr", quietly = TRUE)) install.packages("tidyr")
 if (!requireNamespace("raster", quietly = TRUE)) install.packages("raster")
   require(raster)
 
+  # library(here)
 #arc.check_product()
     
 ###########################################################
@@ -87,7 +90,7 @@ tabFunc <- function(indx, extracted, region, regname) {
 arc.progress_pos(0)
 arc.progress_label("Getting data and variables...")
 
-setwd("E:/Misc/EIA_Level1_Tool")
+setwd(here())
 # Network Paths and such
 eia_gdb <- "EIA_Level1_Tool.gdb"
 
@@ -117,7 +120,7 @@ landcover1 <- arc.raster(landcover)
 landcover1 <- as.raster(landcover1)
 landcover_mask <- crop(landcover1, as(site_buffer_all, 'Spatial'))
 landcover_crop <- mask(landcover_mask, as(site_buffer_all, 'Spatial'))
-print("works to here!")
+##print("works to here!")
 # convert landcover to natural cover based on a lookup table
 lu_nlcd2011_natcov <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_remapNatCov"))
 lu_nlcd2011_natcov <- arc.select(lu_nlcd2011_natcov)
@@ -136,6 +139,7 @@ print("Calculating LAN1...")
 natcov_poly <- rasterToPolygons(natcov, fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=TRUE)
 natcov_poly <- st_as_sf(natcov_poly)
 natcov_poly_sub <- st_cast(natcov_poly, "POLYGON")
+natcov_poly_sub <- natcov_poly_sub[which(natcov_poly_sub$layer==1),] # subset to Nat Cover
 
 # create a layer of continous natural cover by finding which features intersect with original site
 natcov_cont <- natcov_poly_sub[site_sf,]
@@ -241,15 +245,19 @@ arc.progress_label("Calculating BUF1...")
 print("Calculating BUF1...")
 # conver to a line feature from a polygon
 sf_ln <- st_cast(site_sf, 'LINESTRING')
-# extract the raster cells that intersect the line
-ext1 <- raster::extract(natcov, sf_ln, method='simple')
-
+### extract the raster cells that intersect the line
+##ext1 <- raster::extract(natcov, sf_ln, method='simple')
 # i don't know that the next two lines do???????
-a <- lapply(seq(ext1), tabFunc, ext1, sf_ln, "ID")
-a2 <- do.call("rbind", a)
+#a <- lapply(seq(ext1), tabFunc, ext1, sf_ln, "ID")
+#a2 <- do.call("rbind", a)
+
+buf1 <- st_intersection(sf_ln, natcov_cont)
 
 # calculate the rating
-buf1_score <- a2$Freq[which(a2$Var1==1)] /sum(a2$Freq)
+buf1_score <- as.numeric(st_length(buf1)) / as.numeric(st_length(sf_ln))
+buf1_score <- round(buf1_score, 3)
+                                                        
+##buf1_score <- a2$Freq[which(a2$Var1==1)] /sum(a2$Freq)
 # return the results to the screen
 buf1_rating <- NA
 if(buf1_score >= 0.9){
