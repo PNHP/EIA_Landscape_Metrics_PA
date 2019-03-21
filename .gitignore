@@ -134,3 +134,4 @@ Index/EIA_Level1_Tool/segments_2
 .RData
 *.Rhistory
 *.csv
+*.RDataTmp

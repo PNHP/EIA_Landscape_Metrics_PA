@@ -34,9 +34,13 @@ if (!requireNamespace("tidyr", quietly = TRUE)) install.packages("tidyr")
 if (!requireNamespace("raster", quietly = TRUE)) install.packages("raster")
   require(raster)
 
-  # library(here)
 #arc.check_product()
-    
+
+#env = arc.env()
+#wkspath <- env$workspace
+
+setwd("E:/Misc/EIA_Level1_Tool")
+          
 ###########################################################
 # define functions
 ###########################################################
@@ -90,7 +94,7 @@ tabFunc <- function(indx, extracted, region, regname) {
 arc.progress_pos(0)
 arc.progress_label("Getting data and variables...")
 
-setwd(here())
+
 # Network Paths and such
 eia_gdb <- "EIA_Level1_Tool.gdb"
 
