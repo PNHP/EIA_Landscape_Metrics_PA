@@ -87,6 +87,7 @@ tabFunc <- function(indx, extracted, region, regname) {
 arc.progress_pos(0)
 arc.progress_label("Getting data and variables...")
 
+setwd("E:/Misc/EIA_Level1_Tool")
 # Network Paths and such
 eia_gdb <- "EIA_Level1_Tool.gdb"
 
@@ -106,6 +107,9 @@ site_sf <- arc.data2sf(site) # convert to a simple features object
 site_buffer <- st_multibuffer(site_sf, 100, 500, 400) # this produces two separate donuts with a hole in the center
 site_buffer_all <- st_union(site_sf, site_buffer) # this fills in the hole in the center
 site_buffer_all <-st_union(site_buffer_all, by_feature = FALSE) # dissolves the boundaries
+fgdb_path <- file.path(eia_gdb)
+arc.write(file.path(fgdb_path,paste("Site",siteID,"Buffer",sep="_")), data=site_buffer, overwrite=TRUE)
+
 
 # extract landcover
 landcover <- arc.open(paste0(eia_gdb, "/nlcd2011"))
@@ -113,7 +117,7 @@ landcover1 <- arc.raster(landcover)
 landcover1 <- as.raster(landcover1)
 landcover_mask <- crop(landcover1, as(site_buffer_all, 'Spatial'))
 landcover_crop <- mask(landcover_mask, as(site_buffer_all, 'Spatial'))
-
+print("works to here!")
 # convert landcover to natural cover based on a lookup table
 lu_nlcd2011_natcov <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_remapNatCov"))
 lu_nlcd2011_natcov <- arc.select(lu_nlcd2011_natcov)
@@ -258,8 +262,8 @@ if(buf1_score >= 0.9){
   buf1_rating <- "D"
 }
 # return the results to the screen
-print(paste("Buf1 Score:",buf1_score,sep=" "))
-print(paste("Buf1 Rating:",buf1_rating,sep=" "))
+print(paste("BUF1 Score:",buf1_score,sep=" "))
+print(paste("BUF1 Rating:",buf1_rating,sep=" "))
 
 ###########################################################
 # BUF2 - 
@@ -273,6 +277,7 @@ site_100m <- site_buffer[which(site_buffer$distance==100),]
 natcov_100m <- st_intersection(site_100m, natcov_cont)
 natcov_100m <- st_union(site_sf, natcov_100m)
 natcov_100m <- st_union(natcov_100m, by_feature = FALSE)
+arc.write(file.path(fgdb_path,paste("Site",siteID,"NatCover",sep="_")), data=natcov_100m, overwrite=TRUE)
 # convert to polygon to points to use in the distance matrix
 natcov_100m_pts <- st_cast(natcov_100m, to="MULTIPOINT")
 natcov_100m_pts <- st_cast(natcov_100m_pts, to="POINT")  # may be good to thin these
@@ -295,8 +300,8 @@ if(buf2_score >= 100){
   buf2_rating <- "D"
 }
 # return the results to the screen
-print(paste("Buf2 Score:",buf2_score,sep=" "))
-print(paste("Buf2 Rating:",buf2_rating,sep=" "))
+print(paste("BUF2 Score:",buf2_score,sep=" "))
+print(paste("BUF2 Rating:",buf2_rating,sep=" "))
 
 ###########################################################
 # Assemble results into a csv table 
