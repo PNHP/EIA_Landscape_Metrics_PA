@@ -36,9 +36,6 @@ if (!requireNamespace("raster", quietly = TRUE)) install.packages("raster")
 
 #arc.check_product()
 
-#env = arc.env()
-#wkspath <- env$workspace
-
 setwd("E:/Misc/EIA_Level1_Tool")
           
 ###########################################################
@@ -46,7 +43,7 @@ setwd("E:/Misc/EIA_Level1_Tool")
 ###########################################################
 # Function to create a multiple ring buffer
 st_multibuffer <- function(x, from, to, by, nQuadSegs=30) { # get a multi buffered polygon. Require an sf object
-  seq.buffer <-seq(from,to, by) # allocate a  vector of length equal to number of buffer required
+  seq.buffer <-seq(from, to, by) # allocate a  vector of length equal to number of buffer required
   if(inherits(x,"sf")) {
     # create a list of buffers 
     k <- vector('list', length(seq.buffer))
@@ -117,7 +114,6 @@ site_buffer_all <-st_union(site_buffer_all, by_feature = FALSE) # dissolves the 
 fgdb_path <- file.path(eia_gdb)
 arc.write(file.path(fgdb_path,paste("Site",siteID,"Buffer",sep="_")), data=site_buffer, overwrite=TRUE)
 
-
 # extract landcover
 landcover <- arc.open(paste0(eia_gdb, "/nlcd2011"))
 landcover1 <- arc.raster(landcover)
@@ -142,8 +138,8 @@ print("Calculating LAN1...")
 # convert the natural cover layer to a polygon
 natcov_poly <- rasterToPolygons(natcov, fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=TRUE)
 natcov_poly <- st_as_sf(natcov_poly)
-natcov_poly_sub <- st_cast(natcov_poly, "POLYGON")
-natcov_poly_sub <- natcov_poly_sub[which(natcov_poly_sub$layer==1),] # subset to Nat Cover
+natcov_poly_sub <- st_cast(natcov_poly) #, "POLYGON"
+natcov_poly_sub <- natcov_poly_sub[which(natcov_poly_sub$Band_1==1),] # subset to Nat Cover
 
 # create a layer of continous natural cover by finding which features intersect with original site
 natcov_cont <- natcov_poly_sub[site_sf,]
