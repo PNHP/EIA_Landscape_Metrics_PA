@@ -36,7 +36,7 @@ if (!requireNamespace("raster", quietly = TRUE)) install.packages("raster")
 if (!requireNamespace("plyr", quietly = TRUE)) install.packages("plyr")
   require(plyr)
 
-#arc.check_product()
+# arc.check_product()
 
 setwd("E:/Misc/EIA_Level1_Tool")
           
@@ -98,7 +98,7 @@ eia_gdb <- "EIA_Level1_Tool.gdb"
 
 # open the NHA feature class and select and NHA
 print("Prepping the data...")
-sitename <- in_params[[1]] # sitename <- paste(eia_gdb,"Clermont_EIA_polys", sep="/")
+sitename <- in_params[[1]] # sitename <- paste(eia_gdb,"PeatlandGoall2polys_Project", sep="/")
 site <- arc.open(sitename) 
 site <- arc.select(site)
 site_sf <- arc.data2sf(site) # convert to a simple features object
@@ -108,10 +108,11 @@ site_sf$ID <- site_sf$OBJECTID
 # vectorize it
 results_list <- list() # creates an empty list to store everything
 
-for(i in 1:nrow(site_sf)){
+for(i in 36:nrow(site_sf)){
   siteID <- site_sf$ID[i] # use in_params[[2]] to select site id field  
   site_sfIndex = site_sf[site_sf$ID==siteID,]
-  
+  library(lwgeom)
+  site_sfIndex <- st_make_valid(site_sfIndex)
   ###########################################################
   # Shared Data Prep - this preps the site buffers and clips out the landcover to the buffer
   ###########################################################
@@ -271,9 +272,13 @@ for(i in 1:nrow(site_sf)){
   buf1 <- st_intersection(sf_ln, natcov_cont)
   
   # calculate the rating
-  buf1_score <- as.numeric(st_length(buf1)) / as.numeric(st_length(sf_ln))
-  buf1_score <- round(buf1_score, 3)
-  
+  if(nrow(buf1)==0){
+    buf1_score <- 0
+  } else {
+    buf1_score <- as.numeric(st_length(buf1)) / as.numeric(st_length(sf_ln))
+    buf1_score <- round(buf1_score, 3)   
+  }
+
   ##buf1_score <- a2$Freq[which(a2$Var1==1)] /sum(a2$Freq)
   # return the results to the screen
   buf1_rating <- NA
@@ -300,19 +305,26 @@ for(i in 1:nrow(site_sf)){
   site_100m <- site_buffer[which(site_buffer$distance==100),]
   # clip the contigious natural cover buffer by the 100m buffer fill in the donut hole
   natcov_100m <- st_intersection(site_100m, natcov_cont)
-  natcov_100m <- st_union(site_sfIndex, natcov_100m)
-  natcov_100m <- st_union(natcov_100m, by_feature = FALSE)
-  arc.write(file.path(fgdb_path,paste("Site",siteID,"NatCover",sep="_")), data=natcov_100m, overwrite=TRUE)
-  # convert to polygon to points to use in the distance matrix
-  natcov_100m_pts <- st_cast(natcov_100m, to="MULTIPOINT")
-  natcov_100m_pts <- st_cast(natcov_100m_pts, to="POINT")  # may be good to thin these
-  rm(natcov_100m)
-  # calculate of vector of distances
-  natcov_dist <- st_distance(natcov_100m_pts, site_sfIndex)
-  natcov_dist <- as.numeric(natcov_dist)
-  rm(natcov_100m_pts)
-  # calculate the BUF2 score
-  buf2_score <- round(mean(natcov_dist),3)
+  
+  if(nrow(natcov_100m)==0){
+    buf2_score <- 0
+  } else {
+    natcov_100m <- st_union(site_sfIndex, natcov_100m)
+    natcov_100m <- st_union(natcov_100m, by_feature = FALSE)
+    arc.write(file.path(fgdb_path,paste("Site",siteID,"NatCover",sep="_")), data=natcov_100m, overwrite=TRUE)
+    # convert to polygon to points to use in the distance matrix
+    natcov_100m_pts <- st_cast(natcov_100m, to="MULTIPOINT")
+    natcov_100m_pts <- st_cast(natcov_100m_pts, to="POINT")  # may be good to thin these
+    rm(natcov_100m)
+    # calculate of vector of distances
+    natcov_dist <- st_distance(natcov_100m_pts, site_sfIndex)
+    natcov_dist <- as.numeric(natcov_dist)
+    rm(natcov_100m_pts)
+    # calculate the BUF2 score
+    buf2_score <- round(mean(natcov_dist),3)
+  }
+  
+
   # calculate the rating
   buf2_rating <- NA
   if(buf2_score >= 100){
