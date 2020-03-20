@@ -338,7 +338,7 @@ for(i in 36:nrow(site_sf)){
   }
   # return the results to the screen
   print(paste("BUF2 Score:",buf2_score,sep=" "))
-  print(paste("BUF2 Rating:",buf2_rating,sep=" "))  
+  print(paste("BUF2 Rating:",buf2_rating,sep=" "))  gg
 
   ###########################################################
   # Assemble results into output 
@@ -359,6 +359,6 @@ site_sf1 <- merge(site_sf, EIA_results, by.x="ID", by.y="Site.ID")
 arc.write(paste(eia_gdb,"/EIAresults_",gsub("[^0-9]", "", Sys.time() ),sep=""), data=site_sf1)
 
 # write the csv to the working directory
-write.csv(EIA_results, paste("site",siteID,"_EIAresults.csv",sep=""), row.names=FALSE)
+write.csv(EIA_results, paste("PeatlandsGoal2","_EIAresults.csv",sep=""), row.names=FALSE)
 
 }
