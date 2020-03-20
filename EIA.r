@@ -366,10 +366,12 @@ for(i in 36:nrow(site_sf)){
 EIA_results <- ldply(results_list)
 
 # create a shapefile
+runName <- "Goal2poly_2016"
+
 site_sf1 <- merge(site_sf, EIA_results, by.x="ID", by.y="Site.ID")
-arc.write(paste(eia_gdb,"/EIAresults_",gsub("[^0-9]", "", Sys.time() ),sep=""), data=site_sf1)
+arc.write(paste(eia_gdb,"/EIAresults_",runName,"_",gsub("[^0-9]", "", Sys.time() ),sep=""), data=site_sf1)
 
 # write the csv to the working directory
-write.csv(EIA_results, paste("PeatlandsGoal2","_EIAresults.csv",sep=""), row.names=FALSE)
+write.csv(EIA_results, paste(runName,"_EIAresults.csv",sep=""), row.names=FALSE)
 
 }
