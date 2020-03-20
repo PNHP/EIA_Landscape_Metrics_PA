@@ -104,6 +104,23 @@ site <- arc.select(site)
 site_sf <- arc.data2sf(site) # convert to a simple features object
 site_sf <- st_cast(site_sf)
 site_sf$ID <- site_sf$OBJECTID
+
+# load the landcover files in
+print("loading the landcover files in...")
+
+nlcd_layer <- "nlcd2016" # nlcd2011_new
+
+landcover <- arc.open(paste0(eia_gdb, "/", nlcd_layer))
+landcover1 <- arc.raster(landcover)
+landcover1 <- as.raster(landcover1)
+# load the remap table for the landcover in. Currently, all files use the same schema
+print("loading the landcover remap table in...")
+lu_nlcd2011_natcov <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_remapNatCov"))
+lu_nlcd2011_natcov <- arc.select(lu_nlcd2011_natcov)
+lu_nlcd2011_natcov_matrix <- as.matrix(lu_nlcd2011_natcov[c("Value","CoverTypeval")])
+
+
+
 #############################################################
 # vectorize it
 results_list <- list() # creates an empty list to store everything
@@ -124,17 +141,11 @@ for(i in 36:nrow(site_sf)){
   fgdb_path <- file.path(eia_gdb)
   arc.write(file.path(fgdb_path,paste("Site",siteID,"Buffer",sep="_")), data=site_buffer, overwrite=TRUE)
   # extract landcover
-  landcover <- arc.open(paste0(eia_gdb, "/nlcd2011"))
-  landcover1 <- arc.raster(landcover)
-  landcover1 <- as.raster(landcover1)
   landcover_mask <- crop(landcover1, as(site_buffer_all, 'Spatial'))
   landcover_crop <- mask(landcover_mask, as(site_buffer_all, 'Spatial'))
   # convert landcover to natural cover based on a lookup table
-  lu_nlcd2011_natcov <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_remapNatCov"))
-  lu_nlcd2011_natcov <- arc.select(lu_nlcd2011_natcov)
-  lu_nlcd2011_natcov_matrix <- as.matrix(lu_nlcd2011_natcov[c("Value","CoverTypeval")])
   natcov <- reclassify(landcover_crop, lu_nlcd2011_natcov_matrix) # reclassify to natural or not
-  rm(lu_nlcd2011_natcov, lu_nlcd2011_natcov_matrix)  
+  #rm(lu_nlcd2011_natcov, lu_nlcd2011_natcov_matrix)  
   
   print(paste("Working on site ",i," of ",nrow(site_sf),"...", sep=""))
   
