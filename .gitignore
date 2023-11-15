@@ -130,7 +130,6 @@ Index/Thumbnail/indx
 *.aprx
 Index/EIA_Level1_Tool/segments_2
 .Rproj.user
-*.Rproj
 .RData
 *.Rhistory
 *.csv
