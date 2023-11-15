@@ -19,14 +19,17 @@
 #tool_exec <- function(in_params, out_params)
 #{
 
-if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
-require(here)
-
+# SET INPUTS!!!!!
 #sites <- in_params[[1]]  # use this as input for ArcGIS Pro Tool
 sites <- "W:/Heritage/Heritage_Projects/1237 EPA Floodplains and Seeps/Floodplains and seeps.gdb/FloodplainsPoly" # THIS IS YOUR INPUT POLYGON SITE LAYER FOR WHICH EIA METRICS WILL BE CALCULATED
 #sites <- "W:/Heritage/Heritage_Projects/1237 EPA Floodplains and Seeps/Floodplains and seeps.gdb/Seeps_XYTableToPoint_albers_buff5m"
 runName <- "FloodplainsPoly" # THIS IS THE OUTPUT RUN NAME THAT WILL IDENTIFY EIA 
 
+
+if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
+require(here)
+
+## CHANGE THESE VARIABLES IF NEEDED
 setwd(here::here())
 eia_gdb <- here::here("_data","EIA_layers.gdb") # change path if your geodatabase with EIA layers is not in the _data folder within the root folder of your R project
 nlcd_layer <- "nlcd_2019_pa_albers" # change name of NLCD layer being used - this must be stored in the eia_gdb above
