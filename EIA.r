@@ -10,19 +10,30 @@
 #
 # Updates:
 # * 2019-03-16 comments in script, and misc cleanup
+# 2023-11-15 - updated in 2023 by MMoore to get code working again and make code
+#              easier to run from within R. 
 #
 # To Do List/Future ideas:
-# * vectorize to deal with more than one site at a time
-# * ability to select the id field, but export it at whatever EcoObs uses
-# * return buffer to ArcGIS???
 #-------------------------------------------------------------------------------
 
-tool_exec <- function(in_params, out_params)
-{
+#tool_exec <- function(in_params, out_params)
+#{
+
+if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
+require(here)
+
+#sites <- in_params[[1]]  # use this as input for ArcGIS Pro Tool
+sites <- "W:/Heritage/Heritage_Projects/1237 EPA Floodplains and Seeps/Floodplains and seeps.gdb/FloodplainsPoly" # THIS IS YOUR INPUT POLYGON SITE LAYER FOR WHICH EIA METRICS WILL BE CALCULATED
+#sites <- "W:/Heritage/Heritage_Projects/1237 EPA Floodplains and Seeps/Floodplains and seeps.gdb/Seeps_XYTableToPoint_albers_buff5m"
+runName <- "FloodplainsPoly" # THIS IS THE OUTPUT RUN NAME THAT WILL IDENTIFY EIA 
+
+setwd(here::here())
+eia_gdb <- here::here("_data","EIA_layers.gdb") # change path if your geodatabase with EIA layers is not in the _data folder within the root folder of your R project
+nlcd_layer <- "nlcd_2019_pa_albers" # change name of NLCD layer being used - this must be stored in the eia_gdb above
+outputFolder <- here::here("_data","Output") # change path if your output folder is in a different location - this must be an existing folder
+outputGDB <- "Output.gdb" # change path if your output gdb is a different name - this must be an existing GDB WITHIN THE OUTPUT FOLDER ABOVE.
 
 # check and load required libraries  
-if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
-  require(here)
 if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
   require(dplyr)
 if (!requireNamespace("arcgisbinding", quietly = TRUE)) install.packages("arcgisbinding")
@@ -36,10 +47,8 @@ if (!requireNamespace("raster", quietly = TRUE)) install.packages("raster")
 if (!requireNamespace("plyr", quietly = TRUE)) install.packages("plyr")
   require(plyr)
 
-# arc.check_product()
+arc.check_product()
 
-setwd("E:/Misc/EIA_Level1_Tool")
-          
 ###########################################################
 # define functions
 ###########################################################
@@ -88,18 +97,14 @@ tabFunc <- function(indx, extracted, region, regname) {
 }
 
 ###########################################################
-#
+# load files
 ###########################################################
 arc.progress_pos(0)
 arc.progress_label("Getting data and variables...")
 
-# Network Paths and such
-eia_gdb <- "EIA_Level1_Tool.gdb"
-
 # open the NHA feature class and select and NHA
 print("Prepping the data...")
-sitename <- in_params[[1]] # sitename <- paste(eia_gdb,"PeatlandGoall2polys_Project", sep="/")
-site <- arc.open(sitename) 
+site <- arc.open(sites) 
 site <- arc.select(site)
 site_sf <- arc.data2sf(site) # convert to a simple features object
 site_sf <- st_cast(site_sf)
@@ -108,28 +113,30 @@ site_sf$ID <- site_sf$OBJECTID
 # load the landcover files in
 print("loading the landcover files in...")
 
-nlcd_layer <- "nlcd2016" # nlcd2011_new
-
 landcover <- arc.open(paste0(eia_gdb, "/", nlcd_layer))
 landcover1 <- arc.raster(landcover)
 landcover1 <- as.raster(landcover1)
+
 # load the remap table for the landcover in. Currently, all files use the same schema
 print("loading the landcover remap table in...")
-lu_nlcd2011_natcov <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_remapNatCov"))
-lu_nlcd2011_natcov <- arc.select(lu_nlcd2011_natcov)
-lu_nlcd2011_natcov_matrix <- as.matrix(lu_nlcd2011_natcov[c("Value","CoverTypeval")])
-
-
+lu_nlcd <- arc.open(paste0(eia_gdb, "/lu_NLCD"))
+lu_nlcd <- arc.select(lu_nlcd)
+lu_nlcd <- as.data.frame(lu_nlcd)
+lu_nlcd_matrix <- as.matrix(lu_nlcd[c("Value","cover_type_value")])
 
 #############################################################
 # vectorize it
+#############################################################
 results_list <- list() # creates an empty list to store everything
 
-for(i in 36:nrow(site_sf)){
-  siteID <- site_sf$ID[i] # use in_params[[2]] to select site id field  
+for(i in 1:nrow(site_sf)){
+  siteID <- site_sf$ID[i] # use in_params[[2]] to select site id field
   site_sfIndex = site_sf[site_sf$ID==siteID,]
+  
   library(lwgeom)
   site_sfIndex <- st_make_valid(site_sfIndex)
+  
+  
   ###########################################################
   # Shared Data Prep - this preps the site buffers and clips out the landcover to the buffer
   ###########################################################
@@ -144,8 +151,8 @@ for(i in 36:nrow(site_sf)){
   landcover_mask <- crop(landcover1, as(site_buffer_all, 'Spatial'))
   landcover_crop <- mask(landcover_mask, as(site_buffer_all, 'Spatial'))
   # convert landcover to natural cover based on a lookup table
-  natcov <- reclassify(landcover_crop, lu_nlcd2011_natcov_matrix) # reclassify to natural or not
-  #rm(lu_nlcd2011_natcov, lu_nlcd2011_natcov_matrix)  
+  natcov <- reclassify(landcover_crop, lu_nlcd_matrix) # reclassify to natural or not
+  #rm(lu_nlcd, lu_nlcd_matrix)  
   
   print(paste("Working on site ",i," of ",nrow(site_sf),"...", sep=""))
   
@@ -184,6 +191,7 @@ for(i in 36:nrow(site_sf)){
   print(paste("LAN1 Score:", lan1_score,sep=" "))
   print(paste("LAN1 Rating:", lan1_rating,sep=" "))
   
+  
   ###########################################################
   # LAN2 - land Use Index
   ###########################################################
@@ -209,7 +217,7 @@ for(i in 36:nrow(site_sf)){
     dplyr::mutate(per = Freq / sum(Freq)) %>% ungroup()
   
   # get lookup table for landuse index conversion
-  lu_lan2coeff <- arc.open(paste0(eia_gdb, "/lu_NLCD2011_LAN2coefficients"))
+  lu_lan2coeff <- arc.open(paste0(eia_gdb, "/lu_NLCD"))
   lu_lan2coeff <- arc.select(lu_lan2coeff)
   lu_lan2coeff$OBJECTID <- NULL
   
@@ -229,7 +237,7 @@ for(i in 36:nrow(site_sf)){
     lan2_100m_rating <- "A"
   } else if (lan2_100m_totscore >= 8 && lan2_100m_totscore < 9.5){
     lan2_100m_rating <- "B"
-  } else if(lan2_100m_totscore >= 4&& lan2_100m_totscore < 8){
+  } else if(lan2_100m_totscore >= 4 && lan2_100m_totscore < 8){
     lan2_100m_rating <- "C"
   } else {
     lan2_100m_rating <- "D"
@@ -241,7 +249,7 @@ for(i in 36:nrow(site_sf)){
     lan2_500m_rating <- "A"
   } else if (lan2_500m_totscore >= 8 && lan2_500m_totscore < 9.5){
     lan2_500m_rating <- "B"
-  } else if(lan2_500m_totscore >= 4&& lan2_500m_totscore < 8){
+  } else if(lan2_500m_totscore >= 4 && lan2_500m_totscore < 8){
     lan2_500m_rating <- "C"
   } else {
     lan2_500m_rating <- "D"
@@ -255,7 +263,7 @@ for(i in 36:nrow(site_sf)){
     lan2_combined_rating <- "A"
   } else if (lan2_combined_totscore >= 8 && lan2_combined_totscore < 9.5){
     lan2_combined_rating <- "B"
-  } else if(lan2_combined_totscore >= 4&& lan2_combined_totscore < 8){
+  } else if(lan2_combined_totscore >= 4 && lan2_combined_totscore < 8){
     lan2_combined_rating <- "C"
   } else {
     lan2_combined_rating <- "D"
@@ -263,7 +271,6 @@ for(i in 36:nrow(site_sf)){
   # return the results to the screen
   print(paste("LAN2 Score:",lan2_combined_totscore, sep=" "))
   print(paste("LAN2 Rating:",lan2_combined_rating, sep=" "))
-  
   
   
   ###########################################################
@@ -305,6 +312,7 @@ for(i in 36:nrow(site_sf)){
   # return the results to the screen
   print(paste("BUF1 Score:",buf1_score,sep=" "))
   print(paste("BUF1 Rating:",buf1_rating,sep=" "))
+  
   
   ###########################################################
   # BUF2 - 
@@ -349,7 +357,7 @@ for(i in 36:nrow(site_sf)){
   }
   # return the results to the screen
   print(paste("BUF2 Score:",buf2_score,sep=" "))
-  print(paste("BUF2 Rating:",buf2_rating,sep=" "))  gg
+  print(paste("BUF2 Rating:",buf2_rating,sep=" "))
 
   ###########################################################
   # Assemble results into output 
@@ -361,17 +369,13 @@ for(i in 36:nrow(site_sf)){
   results_list[[i]] <- data.frame("Site ID"=siteID, "LAN1_Score"=lan1_score, "LAN1_Rating"=lan1_rating, "LAN2_Rating"=lan2_combined_rating, "LAN2_Score"=lan2_combined_totscore, "BUF1_Score"=buf1_score, "BUF1_Rating"=buf1_rating, "BUF2_Score"=buf2_score, "BUF2_Rating"=buf2_rating) 
 }
 
-
 # turn the list to a data frame
 EIA_results <- ldply(results_list)
 
-# create a shapefile
-runName <- "Goal2poly_2016"
-
 site_sf1 <- merge(site_sf, EIA_results, by.x="ID", by.y="Site.ID")
-arc.write(paste(eia_gdb,"/EIAresults_",runName,"_",gsub("[^0-9]", "", Sys.time() ),sep=""), data=site_sf1)
+arc.write(paste(outputFolder,outputGDB,paste0("/EIAresults_",runName,"_",gsub("[^0-9]", "", Sys.time())),sep="/"), data=site_sf1)
 
 # write the csv to the working directory
-write.csv(EIA_results, paste(runName,"_EIAresults.csv",sep=""), row.names=FALSE)
+write.csv(EIA_results, paste(outputFolder, paste0(runName,"_EIAresults.csv"), sep="/"), row.names=FALSE)
 
-}
+#}
