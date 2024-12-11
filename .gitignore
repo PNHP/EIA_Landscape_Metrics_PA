@@ -134,3 +134,6 @@ Index/EIA_Level1_Tool/segments_2
 *.Rhistory
 *.csv
 *.RDataTmp
+
+# ignore archive folder
+archive/
